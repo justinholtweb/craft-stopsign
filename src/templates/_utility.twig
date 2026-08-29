@@ -1,0 +1,154 @@
+{# Buttons post through `Craft.sendActionRequest` rather than a form: the utility screen is
+   already inside one, and a nested `<form>` corrupts the outer one in every browser. #}
+{% import "_includes/forms.twig" as forms %}
+
+<div class="readable">
+    <p>{{ "Who is inside what, right now. On a stock Craft install this question has no answer at all — `elementactivity` is emptied every sixty seconds and is only ever read for the single element somebody happens to have open."|t('stopsign') }}</p>
+</div>
+
+<h2>{{ "Open right now"|t('stopsign') }}</h2>
+
+{% if board is empty %}
+    <div class="stopsign-empty">{{ "Nobody has anything open."|t('stopsign') }}</div>
+{% else %}
+    <table class="data fullwidth stopsign-board">
+        <thead>
+            <tr>
+                <th>{{ "Editor"|t('stopsign') }}</th>
+                <th>{{ "Element"|t('stopsign') }}</th>
+                <th>{{ "Doing"|t('stopsign') }}</th>
+                <th>{{ "Since"|t('stopsign') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in board %}
+                {% set element = craft.app.elements.getElementById(row.elementId, row.elementType, row.siteId) %}
+                <tr>
+                    <td>{{ row.userName }}</td>
+                    <td>
+                        {% if element %}
+                            <a href="{{ element.getCpEditUrl() }}">{{ element.getUiLabel() }}</a>
+                        {% else %}
+                            <span class="light">#{{ row.elementId }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="stopsign-pill stopsign-pill--{{ row.dirty ? 'editing' : 'viewing' }}">
+                            {{ row.dirty ? "editing"|t('stopsign') : "viewing"|t('stopsign') }}
+                        </span>
+                    </td>
+                    <td>{{ row.firstSeen|datetime('short') }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+{% if settings.lockMode != 'off' %}
+    <h2>{{ "Locks held"|t('stopsign') }}</h2>
+
+    {% if locks is empty %}
+        <div class="stopsign-empty">{{ "No locks are held."|t('stopsign') }}</div>
+    {% else %}
+        <table class="data fullwidth stopsign-board">
+            <thead>
+                <tr>
+                    <th>{{ "Holder"|t('stopsign') }}</th>
+                    <th>{{ "Element"|t('stopsign') }}</th>
+                    <th>{{ "Expires in"|t('stopsign') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lock in locks %}
+                    <tr>
+                        <td>{{ lock.userName }}</td>
+                        <td>#{{ lock.elementId }}</td>
+                        <td>{{ max(0, lock.expiryDate.timestamp - now.timestamp) }}{{ "s"|t('stopsign') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <p>
+        <button type="button" class="btn" id="stopsign-release-locks">{{ "Release every lock"|t('stopsign') }}</button>
+        <span class="light">{{ "Same as `php craft stopsign/unlock --all`."|t('stopsign') }}</span>
+    </p>
+{% endif %}
+
+<hr>
+
+<h2>{{ "Collisions"|t('stopsign') }}</h2>
+
+<div class="readable">
+    <p class="light">{{ "The number worth watching is not how many collisions happened — it is how many were clicked straight through. That is the one that says whether the warning is still doing anything or has become wallpaper."|t('stopsign') }}</p>
+</div>
+
+<ul class="stopsign-summary">
+    {% for outcome, count in summary %}
+        <li><strong>{{ count }}</strong> {{ outcome }}</li>
+    {% endfor %}
+</ul>
+
+{% if history is empty %}
+    <div class="stopsign-empty">{{ "No collisions recorded."|t('stopsign') }}</div>
+{% else %}
+    <table class="data fullwidth stopsign-board">
+        <thead>
+            <tr>
+                <th>{{ "When"|t('stopsign') }}</th>
+                <th>{{ "Editor"|t('stopsign') }}</th>
+                <th>{{ "With"|t('stopsign') }}</th>
+                <th>{{ "Kind"|t('stopsign') }}</th>
+                <th>{{ "Outcome"|t('stopsign') }}</th>
+                <th>{{ "Element"|t('stopsign') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in history %}
+                <tr>
+                    <td>{{ row.dateCreated|datetime('short') }}</td>
+                    <td>{{ row.userName }}</td>
+                    <td>{{ row.otherUserName ?? '—' }}</td>
+                    <td>{{ row.kind }}</td>
+                    <td>{{ row.outcome }}</td>
+                    <td>#{{ row.elementId }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p><button type="button" class="btn" id="stopsign-clear-history">{{ "Clear history"|t('stopsign') }}</button></p>
+{% endif %}
+
+{% js %}
+(function () {
+  var post = function (action, button) {
+    button.classList.add('disabled');
+    Craft.sendActionRequest('POST', action)
+      .then(function (response) {
+        Craft.cp.displayNotice((response.data && response.data.message) || Craft.t('stopsign', 'Done.'));
+        window.location.reload();
+      })
+      .catch(function () {
+        button.classList.remove('disabled');
+        Craft.cp.displayError(Craft.t('stopsign', 'Could not do that.'));
+      });
+  };
+
+  var release = document.getElementById('stopsign-release-locks');
+  var clear = document.getElementById('stopsign-clear-history');
+
+  if (release) {
+    release.addEventListener('click', function () {
+      post('stopsign/history/release-all-locks', release);
+    });
+  }
+
+  if (clear) {
+    clear.addEventListener('click', function () {
+      post('stopsign/history/clear', clear);
+    });
+  }
+})();
+{% endjs %}

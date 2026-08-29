@@ -1,0 +1,57 @@
+{
+    "name": "justinholtweb/craft-stopsign",
+    "description": "Concurrent-editing collision warnings for Craft CMS — an unmissable banner when someone else is in the same entry, a confirmation before you save over them, and an optional soft lock you can always take over.",
+    "version": "5.0.0",
+    "type": "craft-plugin",
+    "keywords": [
+        "craftcms",
+        "craft-plugin",
+        "collision",
+        "concurrent-editing",
+        "locking",
+        "collaboration",
+        "editorial",
+        "snitch",
+        "workflow"
+    ],
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Justin Holt",
+            "homepage": "https://justinholt.com"
+        }
+    ],
+    "support": {
+        "email": "justin@justinholt.com",
+        "issues": "https://github.com/justinholtweb/craft-stopsign/issues",
+        "source": "https://github.com/justinholtweb/craft-stopsign"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.2",
+        "ext-json": "*",
+        "craftcms/cms": "^5.3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "justinholtweb\\stopsign\\": "src/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "craftcms/plugin-installer": true,
+            "yiisoft/yii2-composer": true
+        }
+    },
+    "extra": {
+        "name": "Stop Sign",
+        "handle": "stopsign",
+        "developer": "Justin Holt",
+        "developerUrl": "https://justinholt.com",
+        "documentationUrl": "https://justinholt.com/plugins/craft-stopsign/docs",
+        "changelogUrl": "https://raw.githubusercontent.com/justinholtweb/craft-stopsign/main/CHANGELOG.md",
+        "hasCpSettings": true,
+        "class": "justinholtweb\\stopsign\\Plugin"
+    }
+}

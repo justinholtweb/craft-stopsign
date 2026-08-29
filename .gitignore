@@ -1,0 +1,13 @@
+# Dependencies
+/vendor
+composer.lock
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+/tests/_output/*
+
+# Browser-automation artefacts
+/.playwright-mcp

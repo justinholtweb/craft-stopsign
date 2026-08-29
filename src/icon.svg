@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A regular octagon and one bar. Nothing else survives 18px, which is where a control panel icon
+  is actually judged — a raised hand or the word STOP is a smudge at nav size, whereas the shape
+  of a stop sign is legible on its own and the bar keeps it from reading as a plain polygon.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Stop Sign">
+    <polygon fill="#C8102E" points="29.29,0 70.71,0 100,29.29 100,70.71 70.71,100 29.29,100 0,70.71 0,29.29"/>
+    <rect x="26" y="43.5" width="48" height="13" rx="2.5" fill="#FFFFFF"/>
+</svg>

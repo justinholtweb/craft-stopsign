@@ -1,0 +1,242 @@
+{# Field names carry no `settings[…]` prefix: `craft\base\Plugin::settingsResponse()` runs this
+   template's output through `View::namespaceInputs(…, 'settings')`, so a name written as
+   `settings[enabled]` here posts as `settings[settings][enabled]` and saves nothing at all — the
+   screen looks perfect and every edit is silently discarded. #}
+{% from "_includes/forms.twig" import checkboxSelectField, lightswitchField, selectField, textField %}
+
+<div class="readable">
+    <p>{{ "Craft already knows who else is in an entry — it keeps a sixty-second activity table and stacks a few small avatars in the editor header. Stop Sign takes that from something you can miss to something you can’t, and adds the two things core has no answer for: a question before you save over somebody, and a record afterwards of what everyone decided."|t('stopsign') }}</p>
+    <p>{{ "Utilities → Stop Sign shows who is in what right now, which locks are held, and how often the warning is being clicked straight through."|t('stopsign') }}</p>
+</div>
+
+<hr>
+
+<h2>{{ "What Stop Sign watches"|t('stopsign') }}</h2>
+
+{{ lightswitchField({
+    label: "Enabled"|t('stopsign'),
+    instructions: "The master switch. Off, Stop Sign renders nothing and records nothing — Craft’s own avatar stack carries on as it always did."|t('stopsign'),
+    id: 'enabled',
+    name: 'enabled',
+    on: settings.enabled,
+}) }}
+
+{{ lightswitchField({
+    label: "Every element type"|t('stopsign'),
+    instructions: "Watch anything with an editor. Turn this off to name the types yourself."|t('stopsign'),
+    id: 'watchAllElementTypes',
+    name: 'watchAllElementTypes',
+    on: settings.watchAllElementTypes,
+    toggle: '!watched-types',
+}) }}
+
+<div id="watched-types" class="{{ settings.watchAllElementTypes ? 'hidden' }}">
+    {{ checkboxSelectField({
+        label: "Element types"|t('stopsign'),
+        id: 'watchedElementTypes',
+        name: 'watchedElementTypes',
+        options: elementTypes,
+        values: settings.watchedElementTypes,
+    }) }}
+</div>
+
+{{ checkboxSelectField({
+    label: "Sections to leave alone"|t('stopsign'),
+    instructions: "Entries in these sections get no warning, no badge and no lock. Useful for sections one person owns, and for machine-written content that would otherwise collide with itself."|t('stopsign'),
+    id: 'excludedSections',
+    name: 'excludedSections',
+    options: sections|map(s => { label: s.name, value: s.handle }),
+    values: settings.excludedSections,
+    showAllOption: false,
+}) }}
+
+<hr>
+
+<h2>{{ "The warning"|t('stopsign') }}</h2>
+
+{{ selectField({
+    label: "Banner style"|t('stopsign'),
+    instructions: "Loud is a full-width banner above the content. Subtle is one line — the same words, less of the screen."|t('stopsign'),
+    id: 'bannerStyle',
+    name: 'bannerStyle',
+    options: bannerStyles,
+    value: settings.bannerStyle,
+}) }}
+
+{{ lightswitchField({
+    label: "Warn about people who are only looking"|t('stopsign'),
+    instructions: "On, a colleague with the entry open is named before they have typed anything. Off, only people who have actually started editing are reported."|t('stopsign'),
+    id: 'warnAboutViewers',
+    name: 'warnAboutViewers',
+    on: settings.warnAboutViewers,
+}) }}
+
+{{ lightswitchField({
+    label: "Warn about your own other tabs"|t('stopsign'),
+    instructions: "Two tabs of the same account overwrite each other exactly as two people do. Craft can never report this — it filters you out of its own activity results."|t('stopsign'),
+    id: 'warnOnOwnOtherTabs',
+    name: 'warnOnOwnOtherTabs',
+    on: settings.warnOnOwnOtherTabs,
+}) }}
+
+{{ lightswitchField({
+    label: "Badge occupied elements on index screens"|t('stopsign'),
+    instructions: "A dot on the chip, so you find out before you open the entry rather than after you have started typing in it."|t('stopsign'),
+    id: 'showIndexBadges',
+    name: 'showIndexBadges',
+    on: settings.showIndexBadges,
+}) }}
+
+<hr>
+
+<h2>{{ "The save guard"|t('stopsign') }}</h2>
+
+<div class="readable">
+    <p class="light">{{ "This is the part Craft has nothing like. Its reload prompt appears only on full-page editors and only after the fact; nothing at all stands between the save button and the save."|t('stopsign') }}</p>
+</div>
+
+{{ lightswitchField({
+    label: "Ask before saving over somebody"|t('stopsign'),
+    id: 'guardSaves',
+    name: 'guardSaves',
+    on: settings.guardSaves,
+}) }}
+
+{{ lightswitchField({
+    label: "Only when they have actually typed"|t('stopsign'),
+    instructions: "Recommended. A modal in front of every save because a colleague has the entry open in a background tab is a modal people learn to dismiss without reading — and then it isn’t there when it matters."|t('stopsign'),
+    id: 'guardOnlyWhenOtherIsEditing',
+    name: 'guardOnlyWhenOtherIsEditing',
+    on: settings.guardOnlyWhenOtherIsEditing,
+}) }}
+
+{{ lightswitchField({
+    label: "Ask when the element changed underneath you"|t('stopsign'),
+    instructions: "Someone saved while you had this open, so what is on your screen is out of date and saving it would put the old version back. Works in slideouts, which Craft’s own version of this does not."|t('stopsign'),
+    id: 'guardStaleSaves',
+    name: 'guardStaleSaves',
+    on: settings.guardStaleSaves,
+}) }}
+
+<hr>
+
+<h2>{{ "Soft locks"|t('stopsign') }}</h2>
+
+<div class="readable">
+    <p class="light">{{ "Off by default, and worth leaving off unless warnings have stopped being enough. A lock always expires, is always recorded, and — unless you turn that off below — can always be taken over."|t('stopsign') }}</p>
+</div>
+
+{{ selectField({
+    label: "Lock mode"|t('stopsign'),
+    id: 'lockMode',
+    name: 'lockMode',
+    options: lockModes,
+    value: settings.lockMode,
+    toggle: true,
+    targetPrefix: 'lock-mode-',
+}) }}
+
+<div id="lock-mode-sections" class="{{ settings.lockMode != 'sections' ? 'hidden' }}">
+    {{ checkboxSelectField({
+        label: "Sections to lock"|t('stopsign'),
+        id: 'lockedSections',
+        name: 'lockedSections',
+        options: sections|map(s => { label: s.name, value: s.handle }),
+        values: settings.lockedSections,
+        showAllOption: false,
+    }) }}
+</div>
+
+{{ textField({
+    label: "Lock timeout"|t('stopsign'),
+    instructions: "Seconds a lock survives without a heartbeat from the tab holding it. Closing the laptop releases the lock in this long, not never."|t('stopsign'),
+    id: 'lockTtlSeconds',
+    name: 'lockTtlSeconds',
+    value: settings.lockTtlSeconds,
+    type: 'number',
+    size: 5,
+    unit: 'seconds'|t('stopsign'),
+    errors: settings.getErrors('lockTtlSeconds'),
+}) }}
+
+{{ lightswitchField({
+    label: "Refuse saves from anyone but the holder"|t('stopsign'),
+    instructions: "On, the second editor opens read-only — Craft draws it that way itself, because the lock answers its own permission check. Off, the lock is advisory: the banner still names the holder, but nothing stops a determined save."|t('stopsign'),
+    id: 'enforceLocks',
+    name: 'enforceLocks',
+    on: settings.enforceLocks,
+}) }}
+
+{{ lightswitchField({
+    label: "Allow take-over"|t('stopsign'),
+    instructions: "Turning this off is the one way to get genuinely stuck. `php craft stopsign/unlock --all` is the way back."|t('stopsign'),
+    id: 'allowTakeOver',
+    name: 'allowTakeOver',
+    on: settings.allowTakeOver,
+}) }}
+
+{{ checkboxSelectField({
+    label: "Groups allowed to take over"|t('stopsign'),
+    instructions: "Leave every box clear to let anyone who can edit the element take a lock from anyone else."|t('stopsign'),
+    id: 'takeOverGroups',
+    name: 'takeOverGroups',
+    options: userGroups|map(g => { label: g.name, value: g.handle }),
+    values: settings.takeOverGroups,
+    showAllOption: false,
+}) }}
+
+{{ lightswitchField({
+    label: "Admins are never locked out"|t('stopsign'),
+    instructions: "Leave this on. It is what keeps a mistyped group list from shutting a site’s owner out of their own content."|t('stopsign'),
+    id: 'adminsBypassLocks',
+    name: 'adminsBypassLocks',
+    on: settings.adminsBypassLocks,
+}) }}
+
+<hr>
+
+<h2>{{ "Timing and history"|t('stopsign') }}</h2>
+
+{{ textField({
+    label: "Heartbeat interval"|t('stopsign'),
+    instructions: "How often an open editor reports in. Craft’s own activity poll is fixed at 15 seconds; this one is yours to set."|t('stopsign'),
+    id: 'heartbeatSeconds',
+    name: 'heartbeatSeconds',
+    value: settings.heartbeatSeconds,
+    type: 'number',
+    size: 5,
+    unit: 'seconds'|t('stopsign'),
+    errors: settings.getErrors('heartbeatSeconds'),
+}) }}
+
+{{ textField({
+    label: "Presence window"|t('stopsign'),
+    instructions: "How long after a tab’s last heartbeat it still counts as being here. Must be at least twice the heartbeat, or colleagues flicker in and out of the banner."|t('stopsign'),
+    id: 'presenceTtlSeconds',
+    name: 'presenceTtlSeconds',
+    value: settings.presenceTtlSeconds,
+    type: 'number',
+    size: 5,
+    unit: 'seconds'|t('stopsign'),
+    errors: settings.getErrors('presenceTtlSeconds'),
+}) }}
+
+{{ lightswitchField({
+    label: "Record collisions"|t('stopsign'),
+    instructions: "Keeps what happened and what the author chose. Craft keeps nothing — its activity table is emptied at sixty seconds — so without this there is no way to answer “did anyone overwrite anyone last week?”"|t('stopsign'),
+    id: 'recordHistory',
+    name: 'recordHistory',
+    on: settings.recordHistory,
+}) }}
+
+{{ textField({
+    label: "History retention"|t('stopsign'),
+    instructions: "Days of collision history to keep. Zero keeps it forever."|t('stopsign'),
+    id: 'historyRetentionDays',
+    name: 'historyRetentionDays',
+    value: settings.historyRetentionDays,
+    type: 'number',
+    size: 5,
+    unit: 'days'|t('stopsign'),
+    errors: settings.getErrors('historyRetentionDays'),
+}) }}

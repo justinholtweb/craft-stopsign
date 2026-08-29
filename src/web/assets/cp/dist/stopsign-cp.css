@@ -1,0 +1,282 @@
+/**
+ * Stop Sign — control panel styles.
+ *
+ * Built on Craft’s own custom properties wherever there is one, so the banner follows the control
+ * panel into dark mode without a second palette to keep in step. The signal red is the one thing
+ * that does not: a warning that changes colour with the theme is a warning somebody has to learn
+ * twice.
+ */
+
+:root {
+  --stopsign-red: #c8102e;
+  --stopsign-red-dark: #96001f;
+  --stopsign-amber: #b45309;
+  --stopsign-blue: #0b6bcb;
+}
+
+/* ------------------------------------------------------------------ the banner */
+
+.stopsign-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 0 0 24px;
+  padding: 16px 18px;
+  border-radius: 6px;
+  border-left: 5px solid var(--stopsign-red);
+  background-color: color-mix(in srgb, var(--stopsign-red) 8%, var(--gray-050, #f7f9fc));
+  color: var(--text-color, #1f2933);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.stopsign-banner[data-level='warning'] {
+  border-left-color: var(--stopsign-amber);
+  background-color: color-mix(in srgb, var(--stopsign-amber) 8%, var(--gray-050, #f7f9fc));
+}
+
+.stopsign-banner[data-level='notice'] {
+  border-left-color: var(--stopsign-blue);
+  background-color: color-mix(in srgb, var(--stopsign-blue) 8%, var(--gray-050, #f7f9fc));
+}
+
+/*
+ * The subtle style is one line, not a smaller banner. Shrinking a banner keeps every part of it
+ * and just makes them all harder to read; dropping the detail line and the mark leaves something
+ * that is actually meant to be glanced at.
+ */
+.stopsign-banner[data-style='subtle'] {
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  box-shadow: none;
+  align-items: center;
+}
+
+.stopsign-banner[data-style='subtle'] .stopsign-banner__mark,
+.stopsign-banner[data-style='subtle'] .stopsign-banner__detail {
+  display: none;
+}
+
+.stopsign-banner[data-style='subtle'] .stopsign-banner__headline {
+  font-size: 13px;
+}
+
+/* The octagon. Eight clipped corners rather than an SVG, so it inherits the level’s colour. */
+.stopsign-banner__mark {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  background-color: var(--stopsign-red);
+  clip-path: polygon(
+    30% 0%, 70% 0%, 100% 30%, 100% 70%,
+    70% 100%, 30% 100%, 0% 70%, 0% 30%
+  );
+  position: relative;
+}
+
+.stopsign-banner__mark::after {
+  content: '';
+  position: absolute;
+  inset: 11px 5px;
+  background-color: #fff;
+  border-radius: 1px;
+}
+
+.stopsign-banner[data-level='warning'] .stopsign-banner__mark {
+  background-color: var(--stopsign-amber);
+}
+
+.stopsign-banner[data-level='notice'] .stopsign-banner__mark {
+  background-color: var(--stopsign-blue);
+}
+
+.stopsign-banner__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stopsign-banner__headline {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.stopsign-banner__detail {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--medium-text-color, #596673);
+}
+
+.stopsign-banner__faces {
+  display: flex;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stopsign-banner__faces li {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--gray-050, #fff);
+  background-color: var(--gray-200, #d3dae3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Overlapped, so a crowd reads as a crowd rather than as a row that wraps. */
+.stopsign-banner__faces li + li {
+  margin-left: -10px;
+}
+
+.stopsign-banner__faces img,
+.stopsign-banner__faces svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stopsign-banner__initials {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--medium-text-color, #596673);
+}
+
+.stopsign-banner__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.stopsign-banner__btn {
+  appearance: none;
+  border: 1px solid var(--hairline-color, rgba(51, 64, 77, 0.15));
+  background-color: var(--gray-050, #fff);
+  color: var(--text-color, #1f2933);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stopsign-banner__btn:hover {
+  background-color: var(--gray-100, #eef1f5);
+}
+
+.stopsign-banner__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.stopsign-banner__btn--primary {
+  background-color: var(--stopsign-red);
+  border-color: var(--stopsign-red);
+  color: #fff;
+}
+
+.stopsign-banner__btn--primary:hover {
+  background-color: var(--stopsign-red-dark);
+}
+
+@media (max-width: 620px) {
+  .stopsign-banner {
+    flex-wrap: wrap;
+  }
+
+  .stopsign-banner__actions {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ the save guard */
+
+.stopsign-modal {
+  width: 460px;
+  max-width: calc(100vw - 40px);
+}
+
+.stopsign-modal .body {
+  padding: 24px 24px 20px;
+}
+
+.stopsign-modal h2 {
+  margin: 0 0 10px;
+}
+
+.stopsign-modal__headline {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.stopsign-modal__detail {
+  margin: 0;
+  color: var(--medium-text-color, #596673);
+}
+
+/* ------------------------------------------------------------------ index badges */
+
+/*
+ * A dot on the chip, not a word. An element index is dense and a badge that adds a line of text to
+ * every occupied row reflows the whole table the moment two people start working.
+ */
+.stopsign-occupied {
+  position: relative;
+}
+
+.stopsign-occupied::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--stopsign-red);
+  box-shadow: 0 0 0 2px var(--gray-050, #fff);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ the utility */
+
+.stopsign-board {
+  width: 100%;
+}
+
+.stopsign-board td,
+.stopsign-board th {
+  vertical-align: middle;
+}
+
+.stopsign-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stopsign-pill--editing {
+  background-color: color-mix(in srgb, var(--stopsign-red) 15%, transparent);
+  color: var(--stopsign-red-dark);
+}
+
+.stopsign-pill--viewing {
+  background-color: var(--gray-100, #eef1f5);
+  color: var(--medium-text-color, #596673);
+}
+
+.stopsign-empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--medium-text-color, #596673);
+}
