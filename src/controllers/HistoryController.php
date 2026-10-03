@@ -17,6 +17,13 @@ use yii\web\Response;
  */
 class HistoryController extends Controller
 {
+    public function beforeAction($action): bool
+    {
+        $this->requireCpRequest();
+
+        return parent::beforeAction($action);
+    }
+
     public function actionClear(): Response
     {
         $this->requirePostRequest();

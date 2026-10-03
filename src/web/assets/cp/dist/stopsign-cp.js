@@ -312,7 +312,7 @@
         this.disableSaving();
 
         Craft.cp.displayError(
-          this.config.strings.lostLock.replace('{name}', lock.holderName)
+          this.config.strings.lostLock.replace('{name}', function () { return lock.holderName; })
         );
       }
     },
@@ -479,6 +479,14 @@
      * straight through to `this.elementEditor.handleSubmit(event)`. Wrapping the instance rather
      * than the prototype means nothing global is patched, and ⌘S is covered in both — the
      * slideout binds that shortcut to its own `handleSubmit`, which ends up here anyway.
+     *
+     * A full-page editor needs one more step. Garnish's `addListener(…, 'handleSubmit')` resolves
+     * `this[name].bind(this)` once, at bind time, so the form's submit listener holds the
+     * original method and never sees an instance property set afterwards — the guard was being
+     * walked straight past on the commonest screen there is. Rebinding by name picks up the
+     * wrapper. Dropping the editor's namespaced submit listeners also drops `submit.saveShortcut`,
+     * which on a full-page editor is unreachable anyway: `handleSubmit` runs first and stops
+     * immediate propagation.
      */
     wrapSubmit: function () {
       if (!this.config.guardSaves && !this.config.guardStaleSaves) {
@@ -513,6 +521,15 @@
 
         return Promise.resolve();
       };
+
+      if (!this.editor.slideout && this.editor.$container && typeof this.editor.addListener === 'function') {
+        try {
+          this.editor.removeListener(this.editor.$container, 'submit');
+          this.editor.addListener(this.editor.$container, 'submit', 'handleSubmit');
+        } catch (e) {
+          // Fail open: worst case is the unguarded save Craft would have done anyway.
+        }
+      }
     },
 
     guard: function (event, original) {
@@ -553,7 +570,7 @@
       var self = this;
       var strings = this.config.strings;
 
-      var $container = $('<div class="modal stopsign-modal"/>').appendTo(Garnish.$bod);
+      var $container = $('<div class="modal fitted stopsign-modal"/>').appendTo(Garnish.$bod);
       var $body = $('<div class="body"/>').appendTo($container);
 
       $('<h2/>').text(strings.guardTitle).appendTo($body);

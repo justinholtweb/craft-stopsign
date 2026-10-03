@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<!-- handmade: hand-tuned deck -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stop Sign — Plugin Store promos</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --charcoal: #0f0f1a;
+    --accent: #C8102E;
+    --accent-light: #FF6B7D;
+    --gold: #ffd166;
+    --off-white: #f0f0f5;
+  }
+
+  html { background: #000; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--off-white);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- slide shell ---------------------------------------------------- */
+  .slide {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 85% 15%, rgba(200, 16, 46, 0.30) 0%, transparent 40%),
+      radial-gradient(ellipse at 65% 5%,  rgba(255, 107, 125, 0.12) 0%, transparent 35%),
+      radial-gradient(ellipse at 15% 85%, rgba(255, 209, 102, 0.06) 0%, transparent 40%),
+      radial-gradient(ellipse at 35% 95%, rgba(200, 16, 46, 0.12) 0%, transparent 35%),
+      linear-gradient(135deg, #0f0f1a 0%, #170f15 30%, #1c1117 60%, #0f0f1a 100%);
+  }
+
+  /* The octagon as an outline, bottom-right and running off both edges. Turned 22.5° so none of
+     its sides is vertical or horizontal: upright, its left side was a hard line straight up every
+     slide and the whole thing read as a box edge. */
+  .slide::after {
+    content: '';
+    position: absolute;
+    top: 30%;
+    right: -18%;
+    width: 1300px;
+    height: 1300px;
+    background: url('assets/watermark.svg') no-repeat center / contain;
+    opacity: 0.03;
+    transform: rotate(22.5deg);
+    pointer-events: none;
+  }
+
+  .cover::after { display: none; }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-light), var(--gold), var(--accent));
+    z-index: 5;
+  }
+
+  .inner {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    padding: 118px 130px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ---- type ------------------------------------------------------------ */
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(240, 240, 245, 0.62);
+    margin-bottom: 34px;
+  }
+  .eyebrow .rule { width: 58px; height: 3px; border-radius: 2px; background: var(--accent-light); }
+
+  h1, h2 {
+    font-family: 'Jersey 20', sans-serif;
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: 0.005em;
+  }
+
+  .gradient-text {
+    background: linear-gradient(100deg, #E0344F 0%, #FF6B7D 38%, #ffd166 68%, #E0344F 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lede { font-size: 34px; line-height: 1.5; color: rgba(240, 240, 245, 0.72); }
+
+  /* ---- cover ----------------------------------------------------------- */
+  .cover .inner { gap: 90px; }
+  .cover .copy { flex: 1 1 auto; }
+  .cover h1 { font-size: 168px; margin-bottom: 26px; }
+  .cover .tagline {
+    font-size: 46px;
+    line-height: 1.25;
+    color: rgba(240, 240, 245, 0.78);
+    margin-bottom: 46px;
+    max-width: 920px;
+  }
+  .cover .badges { display: flex; gap: 18px; align-items: center; }
+  .badge {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 14px 26px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 107, 125, 0.45);
+    color: rgba(240, 240, 245, 0.85);
+  }
+  .badge.free { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .cover .mark img { width: 420px; height: 420px; display: block; }
+
+  /* ---- core vs Stop Sign (slide 2) ------------------------------------- */
+  .gap .inner { flex-direction: column; align-items: flex-start; justify-content: center; }
+  .gap h2 { font-size: 96px; margin-bottom: 22px; }
+  .gap .lede { font-size: 31px; max-width: 1300px; margin-bottom: 44px; }
+  .gap table {
+    width: 1660px;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(15, 15, 26, 0.72);
+    overflow: hidden;
+  }
+  .gap th, .gap td { text-align: left; padding: 20px 30px; font-size: 25px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+  .gap thead th { font-size: 17px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(240, 240, 245, 0.45); font-weight: 600; }
+  .gap thead th.us { color: var(--accent-light); }
+  .gap td.q { color: var(--off-white); font-weight: 600; width: 420px; }
+  .gap td.core { color: rgba(240, 240, 245, 0.45); width: 520px; }
+  .gap td.us { color: rgba(240, 240, 245, 0.85); }
+  .gap td.us b { color: var(--accent-light); font-weight: 600; }
+  .gap tr:last-child td { border-bottom: 0; }
+
+  /* ---- control-panel screenshot cards ----------------------------------- */
+  .cpcard .cpc-inner {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    padding: 112px 120px;
+    display: flex;
+    align-items: center;
+    gap: 70px;
+  }
+  .cpcard .cpc-copy { width: 640px; flex: 0 0 640px; }
+  .cpcard .cpc-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 34px;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent-light);
+  }
+  .cpcard .cpc-eyebrow i { display: block; width: 62px; height: 3px; background: var(--accent-light); border-radius: 2px; }
+  .cpcard .cpc-h2 {
+    font-family: 'Jersey 20', 'Inter', sans-serif;
+    font-size: 88px;
+    line-height: 0.96;
+    font-weight: 400;
+    margin: 0 0 28px;
+    color: var(--off-white);
+  }
+  .cpcard .cpc-lede { font-size: 32px; line-height: 1.42; color: rgba(240, 240, 245, 0.66); }
+  .cpcard .cpc-points { list-style: none; margin: 40px 0 0; }
+  .cpcard .cpc-points li {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    font-size: 26px;
+    line-height: 1.5;
+    color: rgba(240, 240, 245, 0.72);
+    margin-bottom: 18px;
+  }
+  .cpcard .cpc-points li::before {
+    content: '';
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    margin-top: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .cpcard .cpc-panel { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
+  .cpcard .cpc-frame {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #e4edf6;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55), 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+  .cpcard .cpc-chrome {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 18px;
+    background: linear-gradient(180deg, #2a2a3d 0%, #21212f 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+  }
+  .cpcard .cpc-chrome b { width: 12px; height: 12px; border-radius: 50%; }
+  .cpcard .cpc-chrome b:nth-child(1) { background: #ff5f57; }
+  .cpcard .cpc-chrome b:nth-child(2) { background: #febc2e; }
+  .cpcard .cpc-chrome b:nth-child(3) { background: #28c840; }
+  .cpcard .cpc-chrome em { margin-left: 12px; font-style: normal; font-size: 19px; color: rgba(240, 240, 245, 0.45); }
+
+  /* Crop in CSS, not in the file: --x/--y/--w/--h pick the region out of a 1500px-wide capture,
+     and --z scales it to fit the panel. Retaking a screenshot never means recutting a PNG. */
+  .crop {
+    position: relative;
+    overflow: hidden;
+    width: calc(var(--w) * 1px);
+    height: calc(var(--h) * 1px);
+    zoom: var(--z, 1);
+  }
+  .crop img {
+    position: absolute;
+    left: calc(var(--x) * -1px);
+    top: calc(var(--y) * -1px);
+    width: calc(var(--iw, 1500) * 1px);
+    display: block;
+  }
+
+  /* ---- the lock (slide 6) ---------------------------------------------- */
+  .rules { position: absolute; right: 120px; top: 50%; transform: translateY(-50%); width: 900px; display: flex; flex-direction: column; gap: 26px; }
+  .rule-card { border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(15, 15, 26, 0.72); padding: 32px 38px; display: flex; gap: 28px; align-items: flex-start; }
+  .rule-card .n { flex: 0 0 auto; font-family: 'Jersey 20', sans-serif; font-size: 64px; line-height: 0.8; color: var(--accent-light); width: 44px; }
+  .rule-card b { display: block; font-size: 31px; margin-bottom: 8px; color: var(--off-white); }
+  .rule-card span { font-size: 23px; line-height: 1.5; color: rgba(240, 240, 245, 0.6); }
+
+  /* ---- footer lockup --------------------------------------------------- */
+  .footer {
+    position: absolute;
+    left: 130px;
+    bottom: 54px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 22px;
+    color: rgba(240, 240, 245, 0.42);
+  }
+  .footer img { width: 40px; height: 40px; border-radius: 9px; }
+  .footer b { color: rgba(240, 240, 245, 0.72); font-weight: 600; }
+
+  body.single .slide { display: none; }
+  body.single .slide.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Cover ============================================================ -->
+<section class="slide cover" data-n="1">
+  <div class="inner">
+    <div class="copy">
+      <div class="eyebrow"><span class="rule"></span> Craft CMS 5</div>
+      <h1 class="gradient-text">Stop Sign</h1>
+      <p class="tagline">Two people in one entry.<br>Somebody gets asked before they save.</p>
+      <div class="badges">
+        <span class="badge free">Free</span>
+        <span class="badge">No editions</span>
+        <span class="badge">No licence key</span>
+      </div>
+    </div>
+    <div class="mark"><img src="assets/icon.svg" alt=""></div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Stop Sign</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-stopsign</div>
+</section>
+
+<!-- 2 · Craft already knows ============================================== -->
+<section class="slide gap" data-n="2">
+  <div class="inner">
+    <div class="eyebrow"><span class="rule"></span> What Craft already does</div>
+    <h2>Craft already knows.<br>It whispers.</h2>
+    <p class="lede">Core tracks who is in an entry and shows a 26px avatar. Stop Sign covers the five gaps it leaves open.</p>
+    <table>
+      <thead><tr><th></th><th>Craft on its own</th><th class="us">With Stop Sign</th></tr></thead>
+      <tbody>
+        <tr><td class="q">Someone else is here</td><td class="core">An avatar in the corner</td><td class="us">A banner that <b>names them</b> and says whether they have typed</td></tr>
+        <tr><td class="q">You click Save</td><td class="core">It saves</td><td class="us"><b>A question first</b>, asked again at the moment of saving</td></tr>
+        <tr><td class="q">In a slideout</td><td class="core">No conflict signal at all</td><td class="us">The same banner and <b>the same guard</b></td></tr>
+        <tr><td class="q">Your own second tab</td><td class="core">Invisible</td><td class="us"><b>Warned</b>, like anybody else</td></tr>
+        <tr><td class="q">Last week's collision</td><td class="core">Deleted after sixty seconds</td><td class="us"><b>A history</b>, with what each person chose</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Stop Sign</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-stopsign</div>
+</section>
+
+<!-- 3 · The banner (real CP screenshot) ================================== -->
+<section class="slide cpcard" data-n="3">
+  <div class="cpc-inner">
+    <div class="cpc-copy">
+      <div class="cpc-eyebrow"><i></i> The moment you open it</div>
+      <h2 class="cpc-h2">Impossible<br>to miss</h2>
+      <p class="cpc-lede">A banner at the top of the form that names who else is in the entry, and whether they have started typing.</p>
+      <ul class="cpc-points">
+        <li>Red when they are editing, amber when they are only looking</li>
+        <li>Updated every ten seconds</li>
+      </ul>
+    </div>
+    <div class="cpc-panel">
+      <figure class="cpc-frame">
+        <div class="cpc-chrome"><b></b><b></b><b></b><em>Entries → Berth booking portal guide</em></div>
+        <div class="crop" style="--x: 24; --y: 100; --w: 1080; --h: 480; --z: 0.92"><img src="shots/stopsign-banner.png" alt=""></div>
+      </figure>
+    </div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Stop Sign</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-stopsign</div>
+</section>
+
+<!-- 4 · The guard (real CP screenshot) =================================== -->
+<section class="slide cpcard" data-n="4">
+  <div class="cpc-inner">
+    <div class="cpc-copy">
+      <div class="cpc-eyebrow"><i></i> Between Save and the save</div>
+      <h2 class="cpc-h2">A question<br>before the<br>damage</h2>
+      <p class="cpc-lede">Craft puts nothing between the save button and the save. Stop Sign asks, and asks with up-to-date information.</p>
+      <ul class="cpc-points">
+        <li>The same words as the banner, every time</li>
+        <li>Fires when the entry changed underneath you, and names who changed it</li>
+      </ul>
+    </div>
+    <div class="cpc-panel">
+      <figure class="cpc-frame">
+        <div class="cpc-chrome"><b></b><b></b><b></b><em>Save → Hold on</em></div>
+        <div class="crop" style="--x: 24; --y: 100; --w: 1080; --h: 480; --z: 0.92"><img src="shots/stopsign-guard.png" alt=""></div>
+      </figure>
+    </div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Stop Sign</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-stopsign</div>
+</section>
+
+<!-- 5 · Slideouts (real CP screenshot) =================================== -->
+<section class="slide cpcard" data-n="5">
+  <div class="cpc-inner">
+    <div class="cpc-copy">
+      <div class="cpc-eyebrow"><i></i> Where Craft goes quiet</div>
+      <h2 class="cpc-h2">Slideouts too.<br>And your own<br>second tab.</h2>
+      <p class="cpc-lede">Craft's reload prompt only appears on the full-page editor, and it never counts your own tabs.</p>
+      <ul class="cpc-points">
+        <li>The same banner and guard in every slideout</li>
+        <li>Entry indexes flag what someone is inside before you click</li>
+      </ul>
+    </div>
+    <div class="cpc-panel">
+      <figure class="cpc-frame">
+        <div class="cpc-chrome"><b></b><b></b><b></b><em>Entries → slideout</em></div>
+        <div class="crop" style="--x: 675; --y: 0; --w: 825; --h: 560; --z: 1.18"><img src="shots/stopsign-slideout.png" alt=""></div>
+      </figure>
+    </div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Stop Sign</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-stopsign</div>
+</section>
+
+<!-- 6 · Soft locks ======================================================= -->
+<section class="slide feature" data-n="6">
+  <div class="inner">
+    <div style="width: 640px;">
+      <div class="eyebrow"><span class="rule"></span> Optional, off by default</div>
+      <h2 style="font-size: 96px; margin-bottom: 30px;">A lock you<br>can always<br>get out of</h2>
+      <p class="lede" style="max-width: 620px;">Turn it on per section. The second editor opens read-only, because Craft's own permission check says so.</p>
+    </div>
+  </div>
+  <div class="rules">
+    <div class="rule-card"><div class="n">1</div><div><b>It always expires</b><span>Renewed by the holder's heartbeat. Close the laptop and it is gone in two minutes, not never.</span></div></div>
+    <div class="rule-card"><div class="n">2</div><div><b>It can always be taken over</b><span>By anyone who could edit the entry, unless you turn that off. Every take-over goes on the record.</span></div></div>
+    <div class="rule-card"><div class="n">3</div><div><b>The database settles the race</b><span>Two people clicking in during the same second get one lock between them, not one each.</span></div></div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Stop Sign</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-stopsign</div>
+</section>
+
+<!-- 7 · History (real CP screenshot) ===================================== -->
+<section class="slide cpcard" data-n="7">
+  <div class="cpc-inner">
+    <div class="cpc-copy">
+      <div class="cpc-eyebrow"><i></i> Utilities → Stop Sign</div>
+      <h2 class="cpc-h2">Is anyone<br>still reading<br>the warning?</h2>
+      <p class="cpc-lede">Who is in what right now, and every collision with what the person chose. "Saved anyway" is the number to watch.</p>
+      <ul class="cpc-points">
+        <li>Fails open: if Stop Sign breaks, saving still works</li>
+        <li>Nothing on the front end, nothing sent anywhere</li>
+      </ul>
+    </div>
+    <div class="cpc-panel">
+      <figure class="cpc-frame">
+        <div class="cpc-chrome"><b></b><b></b><b></b><em>Utilities → Stop Sign</em></div>
+        <div class="crop" style="--iw: 1100; --x: 0; --y: 170; --w: 1076; --h: 735; --z: 0.90"><img src="shots/stopsign-history.png" alt=""></div>
+      </figure>
+    </div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Stop Sign</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-stopsign</div>
+</section>
+
+<script>
+  var n = new URLSearchParams(location.search).get('s');
+  if (n) {
+    document.body.classList.add('single');
+    var el = document.querySelector('.slide[data-n="' + n + '"]');
+    if (el) el.classList.add('active');
+  }
+</script>
+</body>
+</html>

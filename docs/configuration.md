@@ -56,7 +56,7 @@ Turn it off only on a small team where every open editor really is somebody abou
 | Lock timeout | 120 seconds | How long a lock survives without a heartbeat from the tab holding it. |
 | Refuse saves from anyone but the holder | on | Off, the lock is advisory. |
 | Allow take-over | on | |
-| Groups allowed to take over | anyone | |
+| Groups allowed to take over | anyone who can edit | Empty means anyone who could save the element. Naming groups narrows that further; it never lets a read-only account in. |
 | Admins are never locked out | on | |
 
 See **Locking** for what these actually do. Two of them are worth a warning here:

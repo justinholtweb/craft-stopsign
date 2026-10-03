@@ -94,9 +94,21 @@ a forged token can only confuse its forger.
   editor read-only natively — save button gone, fields disabled, autosave stopped — instead of
   leaving a live form that only fails at the end.
 - **`Craft.ElementEditorSlideout.handleSubmit()` calls `this.elementEditor.handleSubmit(event)`.**
-  That is why wrapping one method on the `ElementEditor` *instance* covers full-page saves,
-  slideout saves and ⌘S in both, with nothing global patched. Do not go looking for a `submit()`
-  method — there isn't one.
+  That is why wrapping one method on the `ElementEditor` *instance* covers slideout saves, with
+  nothing global patched. Do not go looking for a `submit()` method — there isn't one.
+- **…but a full-page editor's submit listener was bound before the wrap existed.** Garnish's
+  `addListener($form, 'submit', 'handleSubmit')` resolves `this[name].bind(this)` **once, at bind
+  time**, so replacing the instance property afterwards changes nothing for the form's own
+  listener — the guard was silently skipped on every full-page save and ⌘S, the commonest save
+  there is, while every slideout test passed. `wrapSubmit()` drops the editor's namespaced submit
+  listeners and rebinds `handleSubmit` by name. Test the guard on a full-page editor, not just a
+  slideout.
+- **A `Garnish.Modal` without `fitted` is sized near the viewport by inline styles**, which beat
+  any CSS width — a two-line question sat in a 990×630 white field. Use `class="modal fitted"`, as
+  Craft's own prompts do, and put the width on `.body`.
+- **Lock checks are `canSave()`, not `canView()`.** The endpoints only require view access, so
+  `Locks::canEdit()` gates claiming and take-over — asking Craft with the plugin's own lock
+  ignored, or the lock would make its holder's colleague look like a reader.
 - **Craft overwrites `settings.canonicalUpdatedTimestamp` on every activity poll.** Reading it at
   heartbeat time compares the server's answer against itself, and staleness silently never fires
   after the first fifteen seconds. Snapshot it once, at attach.
@@ -133,12 +145,14 @@ See also `[[craft-plugin-gotchas]]` in the shared memory for family-wide traps.
 
 ## The icon
 
-`src/icon.svg` is a regular octagon in `#C8102E` with one white bar. A raised hand or the word STOP
-is a smudge at 18px, which is where a control panel icon is judged; the octagon reads on its own
-and the bar keeps it from looking like a plain polygon.
+`src/icon.svg` is the family shape — a `rx="22.44"` tile in `#C8102E` with the mark in `#FEFEFE` —
+and the mark is a regular octagon with one bar. A raised hand or the word STOP is a smudge at 18px,
+which is where a control panel icon is judged; the octagon reads on its own and the bar keeps it
+from looking like a plain polygon.
 
-`src/icon-mask.svg` is **one path with the bar knocked out by `fill-rule="evenodd"`**, not a white
-bar painted over a black octagon. The control panel tints a mask, so a painted bar disappears the
+The mark is **one path with the bar knocked out by `fill-rule="evenodd"`**, identical in both
+files: in `icon.svg` the tile shows through the bar, and `src/icon-mask.svg` is that path alone
+with no tile, not a white bar painted over a black octagon. The control panel tints a mask, so a painted bar disappears the
 moment Craft recolours the mark — which it does on hover, and again in dark mode.
 
 `#C8102E` is Pantone 186-ish signal red, kept distinct from Blaster's brick `#C62D25` and RedPen's
@@ -151,7 +165,7 @@ rather than `ddev exec` — see `[[plugin-testing-harness]]` for why.
 
 ```sh
 docker exec -w /var/www/html ddev-plugin-testing-web \
-    php /var/www/craft-stopsign/tests/integration/checks.php          # 80 checks
+    php /var/www/craft-stopsign/tests/integration/checks.php          # 85 checks
 docker exec ddev-plugin-testing-web bash -c \
     'find /var/www/craft-stopsign/src -name "*.php" -print0 | xargs -0 -n1 php -l'
 node --check src/web/assets/cp/dist/stopsign-cp.js

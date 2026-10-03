@@ -72,8 +72,9 @@ entry has no section.
 
 ### Will it block my imports, syncs or queue jobs?
 
-No. A lock is only ever consulted for control panel web requests. Console commands, queue jobs and
-front-end requests are never refused.
+No. Console commands, queue jobs and visitors' front-end requests are never refused. A lock is
+consulted for control panel requests, and for one front-end case: a save posted to a front-end
+action URL by somebody with control panel access, which is otherwise a way to step around it.
 
 ### What happens if the Stop Sign endpoint is down?
 

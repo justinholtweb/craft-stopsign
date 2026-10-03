@@ -70,7 +70,7 @@ class StopSignController extends Controller
             foreach ($board as $row) {
                 $this->stdout(sprintf(
                     "  %-22s %-9s element %d (site %d)\n",
-                    $row['userName'],
+                    $this->clean($row['userName']),
                     $row['dirty'] ? 'editing' : 'viewing',
                     $row['elementId'],
                     $row['siteId'],
@@ -86,7 +86,7 @@ class StopSignController extends Controller
             foreach ($locks as $lock) {
                 $this->stdout(sprintf(
                     "  %-22s element %d (site %d), expires in %ds\n",
-                    $lock['userName'],
+                    $this->clean($lock['userName']),
                     $lock['elementId'],
                     $lock['siteId'],
                     max(0, $lock['expiryDate']->getTimestamp() - time()),
@@ -168,11 +168,11 @@ class StopSignController extends Controller
             $this->stdout(sprintf(
                 "  %s  %-18s %-11s %-10s element %d%s\n",
                 $row['dateCreated']->format('Y-m-d H:i'),
-                mb_substr($row['userName'], 0, 18),
+                mb_substr($this->clean($row['userName']), 0, 18),
                 $row['kind'],
                 $row['outcome'],
                 $row['elementId'],
-                $row['otherUserName'] ? ' (with ' . $row['otherUserName'] . ')' : '',
+                $row['otherUserName'] ? ' (with ' . $this->clean($row['otherUserName']) . ')' : '',
             ));
         }
 
@@ -183,5 +183,16 @@ class StopSignController extends Controller
     {
         $this->stdout('  ' . str_pad($label, 20));
         $this->stdout($value . "\n", Console::FG_CYAN);
+    }
+
+    /**
+     * A user's name, safe to print.
+     *
+     * Names are user-editable, and a terminal will act on escape sequences hidden in one — so a
+     * name could rewrite an admin's window title or scroll output out of sight.
+     */
+    private function clean(string $name): string
+    {
+        return preg_replace('/[\x00-\x1F\x7F]/u', '', $name) ?? '';
     }
 }

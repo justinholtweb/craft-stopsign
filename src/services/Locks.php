@@ -13,6 +13,7 @@ use justinholtweb\stopsign\models\LockState;
 use justinholtweb\stopsign\records\LockRecord;
 use justinholtweb\stopsign\Plugin;
 use yii\base\Component;
+use Throwable;
 use yii\db\Exception as DbException;
 
 /**
@@ -33,6 +34,30 @@ class Locks extends Component
 {
     /** @var array<string, array|null> Live lock rows by `elementId:siteId`, or null for none. */
     private array $memo = [];
+
+    /** Set while `canEdit()` asks Craft, so this plugin's own lock does not answer for it. */
+    private bool $ignoringLocks = false;
+
+    /**
+     * Whether this user could save the element if no Stop Sign lock existed.
+     *
+     * Viewing is not enough to hold a lock or take one. Without this, a reviewer who can only read
+     * an entry claims the lock by opening it first, and every editor behind them gets a read-only
+     * screen — in ordinary use, with nobody doing anything wrong. Asked of the canonical element,
+     * because the lock is on the canonical element.
+     */
+    public function canEdit(ElementInterface $element, User $user): bool
+    {
+        $canonical = $element->getIsCanonical() ? $element : $element->getCanonical();
+
+        $this->ignoringLocks = true;
+
+        try {
+            return Craft::$app->getElements()->canSave($canonical, $user);
+        } finally {
+            $this->ignoringLocks = false;
+        }
+    }
 
     /**
      * Claims the lock if it is going spare, and renews it if it is already ours.
@@ -203,6 +228,15 @@ class Locks extends Component
             return false;
         }
 
+        try {
+            if (!$this->canEdit($element, $user)) {
+                return false;
+            }
+        } catch (Throwable $e) {
+            // Fall through to the settings: the caller has already been shown the element.
+            Craft::warning('Could not check edit permission for take-over: ' . $e->getMessage(), Plugin::LOG_CATEGORY);
+        }
+
         if ($user->admin && $settings->adminsBypassLocks) {
             return true;
         }
@@ -232,6 +266,10 @@ class Locks extends Component
      */
     public function blocksSave(ElementInterface $element, User $user): bool
     {
+        if ($this->ignoringLocks) {
+            return false;
+        }
+
         $settings = Plugin::getInstance()->getSettings();
 
         if (!$settings->enforceLocks) {

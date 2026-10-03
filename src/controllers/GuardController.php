@@ -67,8 +67,18 @@ class GuardController extends BaseController
         $this->requirePostRequest();
         $this->requireAcceptsJson();
 
+        $plugin = $this->plugin();
+
+        if (!$plugin->getSettings()->enabled) {
+            return $this->asSuccess();
+        }
+
         $element = $this->resolveElement();
         $user = $this->signedInUser();
+
+        if (!$plugin->scope->watches($element)) {
+            return $this->asSuccess();
+        }
 
         $outcome = (string)$this->request->getRequiredBodyParam('outcome');
         $allowed = [
@@ -88,12 +98,28 @@ class GuardController extends BaseController
             CollisionRecord::KIND_LOCKED,
         ];
 
-        $otherUserId = $this->request->getBodyParam('otherUserId');
+        // The browser says who the author was warned about, but the history is an audit trail, so
+        // the name has to be one the server can see too: somebody in the element right now, the
+        // lock holder, or whoever made it stale. Anything else — a colleague who left in the
+        // meantime, or a forged id — falls back to whoever the server would have named.
+        $verdict = $plugin->verdicts->build($element, $user, $this->sessionToken());
+        $present = array_map(fn($occupant) => $occupant->userId, $verdict->others);
 
-        $this->plugin()->collisions->record(
+        if ($verdict->lock->holderId !== null) {
+            $present[] = $verdict->lock->holderId;
+        }
+
+        if ($verdict->stale && ($saver = $plugin->collisions->lastSave($element)) !== null) {
+            $present[] = $saver['userId'];
+        }
+
+        $claimed = (int)$this->request->getBodyParam('otherUserId', 0);
+        $otherUserId = in_array($claimed, $present, true) ? $claimed : ($present[0] ?? null);
+
+        $plugin->collisions->record(
             $element,
             $user,
-            $otherUserId !== null && $otherUserId !== '' ? (int)$otherUserId : null,
+            $otherUserId,
             in_array($kind, $allowedKinds, true) ? $kind : CollisionRecord::KIND_CONCURRENT,
             $outcome,
         );

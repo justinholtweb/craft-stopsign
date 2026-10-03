@@ -48,8 +48,15 @@ records the collision, but nothing stops a determined save.
 - **Admins**, while *Admins are never locked out* is on.
 
 A lock that stops `resave/entries` or a Commerce order update is not a collision warning, it is an
-outage. Stop Sign checks that the request is a control panel request before it will refuse
-anything.
+outage. The one front-end request a lock *does* refuse is a save posted to a front-end action URL
+by somebody with control panel access — otherwise any editor could step around a lock by sending
+the same form to `/actions/elements/save` instead of `/admin/actions/elements/save`.
+
+## Who can hold a lock
+
+Only somebody who could save the element. Opening an entry you can only read never claims its
+lock — otherwise a reviewer who happened to arrive first would turn every editor behind them
+read-only — and the same rule applies to **Take over**: a read-only account never sees the button.
 
 ## Losing a lock you were holding
 

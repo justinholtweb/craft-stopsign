@@ -3,7 +3,7 @@
 {% import "_includes/forms.twig" as forms %}
 
 <div class="readable">
-    <p>{{ "Who is inside what, right now. On a stock Craft install this question has no answer at all — `elementactivity` is emptied every sixty seconds and is only ever read for the single element somebody happens to have open."|t('stopsign') }}</p>
+    <p>{{ "Who is inside what, right now. On a stock Craft install this question has no answer at all — Craft’s own activity table is emptied every sixty seconds and is only ever read for the single element somebody happens to have open."|t('stopsign') }}</p>
 </div>
 
 <h2>{{ "Open right now"|t('stopsign') }}</h2>
@@ -26,7 +26,9 @@
                 <tr>
                     <td>{{ row.userName }}</td>
                     <td>
-                        {% if element %}
+                        {# The utility can be granted to people who cannot see every section, so a title
+                           is only shown to somebody who could open the element anyway. #}
+                        {% if element and craft.app.elements.canView(element, currentUser) %}
                             <a href="{{ element.getCpEditUrl() }}">{{ element.getUiLabel() }}</a>
                         {% else %}
                             <span class="light">#{{ row.elementId }}</span>
@@ -84,9 +86,26 @@
     <p class="light">{{ "The number worth watching is not how many collisions happened — it is how many were clicked straight through. That is the one that says whether the warning is still doing anything or has become wallpaper."|t('stopsign') }}</p>
 </div>
 
+{% set outcomeLabels = {
+    warned: "Warned"|t('stopsign'),
+    proceeded: "Saved anyway"|t('stopsign'),
+    cancelled: "Went back"|t('stopsign'),
+    reloaded: "Reloaded"|t('stopsign'),
+    takenOver: "Took over"|t('stopsign'),
+} %}
+{% set kindLabels = {
+    concurrent: "Both in it"|t('stopsign'),
+    stale: "Changed underneath"|t('stopsign'),
+    locked: "Locked"|t('stopsign'),
+    takeover: "Take-over"|t('stopsign'),
+} %}
+
 <ul class="stopsign-summary">
     {% for outcome, count in summary %}
-        <li><strong>{{ count }}</strong> {{ outcome }}</li>
+        <li class="stopsign-summary__stat{{ outcome == 'proceeded' ? ' stopsign-summary__stat--key' }}">
+            <strong>{{ count }}</strong>
+            <span>{{ outcomeLabels[outcome] ?? outcome }}</span>
+        </li>
     {% endfor %}
 </ul>
 
@@ -110,8 +129,8 @@
                     <td>{{ row.dateCreated|datetime('short') }}</td>
                     <td>{{ row.userName }}</td>
                     <td>{{ row.otherUserName ?? '—' }}</td>
-                    <td>{{ row.kind }}</td>
-                    <td>{{ row.outcome }}</td>
+                    <td>{{ kindLabels[row.kind] ?? row.kind }}</td>
+                    <td>{{ outcomeLabels[row.outcome] ?? row.outcome }}</td>
                     <td>#{{ row.elementId }}</td>
                 </tr>
             {% endfor %}

@@ -20,6 +20,20 @@ use yii\web\ForbiddenHttpException;
 abstract class BaseController extends Controller
 {
     /**
+     * Every action here belongs to an editor open in the control panel.
+     *
+     * Craft only demands `accessCp` of control panel requests, so without this a front-end member
+     * account could post to `/actions/stopsign/presence/ping` and read the names of the staff
+     * editing any entry it can view — and claim locks on them.
+     */
+    public function beforeAction($action): bool
+    {
+        $this->requireCpRequest();
+
+        return parent::beforeAction($action);
+    }
+
+    /**
      * The element this request is about, as the caller has it open.
      *
      * @throws BadRequestHttpException if the request does not identify an element.
@@ -77,7 +91,7 @@ abstract class BaseController extends Controller
     {
         $token = (string)$this->request->getBodyParam('sessionToken', '');
 
-        if (!preg_match('/^[a-f0-9]{32}$/', $token)) {
+        if (!preg_match('/\A[a-f0-9]{32}\z/', $token)) {
             throw new BadRequestHttpException('Invalid session token.');
         }
 

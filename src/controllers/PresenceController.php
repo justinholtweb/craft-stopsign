@@ -2,8 +2,11 @@
 
 namespace justinholtweb\stopsign\controllers;
 
+use Craft;
+use justinholtweb\stopsign\Plugin;
 use justinholtweb\stopsign\records\CollisionRecord;
 use justinholtweb\stopsign\records\PresenceRecord;
+use Throwable;
 use yii\web\Response;
 
 /**
@@ -52,7 +55,17 @@ class PresenceController extends BaseController
         // Claiming happens on the heartbeat rather than on page load so that a lock is only ever
         // held by a tab that is still beating. A lock claimed at load and released at unload is a
         // lock that survives a crashed browser forever.
-        $plugin->locks->claimOrRenew($element, $user, $sessionToken);
+        //
+        // Only somebody who could save it may hold it: a reader who got there first would
+        // otherwise turn every editor behind them read-only. If the permission check itself
+        // fails, no lock is claimed — the open direction for a lock is “nobody holds it”.
+        try {
+            if ($plugin->locks->canEdit($element, $user)) {
+                $plugin->locks->claimOrRenew($element, $user, $sessionToken);
+            }
+        } catch (Throwable $e) {
+            Craft::warning('Could not claim the lock: ' . $e->getMessage(), Plugin::LOG_CATEGORY);
+        }
 
         $known = $this->request->getBodyParam('knownUpdatedTimestamp');
         $verdict = $plugin->verdicts->build(

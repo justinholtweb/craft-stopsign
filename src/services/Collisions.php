@@ -40,6 +40,29 @@ class Collisions extends Component
             return;
         }
 
+        // The browser only asks for a "warned" row on the first warning of a stretch, but the
+        // browser is not to be trusted with the size of the audit table. One warned row per
+        // pairing per ten minutes is the same history for an honest client and a ceiling for a
+        // scripted one.
+        if ($outcome === CollisionRecord::OUTCOME_WARNED) {
+            $recent = (new Query())
+                ->from(CollisionRecord::TABLE)
+                ->where([
+                    'elementId' => $elementId,
+                    'siteId' => $element->siteId,
+                    'userId' => $user->id,
+                    'otherUserId' => $otherUserId,
+                    'kind' => $kind,
+                    'outcome' => CollisionRecord::OUTCOME_WARNED,
+                ])
+                ->andWhere(['>', 'dateCreated', Db::prepareDateForDb(new DateTime('-10 minutes', new DateTimeZone('UTC')))])
+                ->exists();
+
+            if ($recent) {
+                return;
+            }
+        }
+
         Db::insert(CollisionRecord::TABLE, [
             'elementId' => $elementId,
             'siteId' => $element->siteId,

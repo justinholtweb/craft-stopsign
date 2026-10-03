@@ -141,6 +141,24 @@ $otherEntry->title = "Stop Sign control entry $suffix";
 $otherEntry->authorId = $admin->id;
 Craft::$app->getElements()->saveElement($otherEntry);
 
+// Holding or taking a lock needs edit rights, so alex and dana can save the test entry and robin
+// can only read it — robin is the reviewer who must never lock anybody out by getting there first.
+$sectionPerms = fn(array $verbs) => array_map(fn($verb) => strtolower("$verb:$section->uid"), $verbs);
+$sitePerm = strtolower("editSite:$site->uid");
+$editor = array_merge([$sitePerm, 'accesscp'], $sectionPerms(['viewEntries', 'viewPeerEntries', 'saveEntries', 'savePeerEntries']));
+$reader = array_merge([$sitePerm, 'accesscp'], $sectionPerms(['viewEntries', 'viewPeerEntries']));
+
+Craft::$app->getUserPermissions()->saveUserPermissions($users['alex']->id, $editor);
+Craft::$app->getUserPermissions()->saveUserPermissions($users['dana']->id, $editor);
+Craft::$app->getUserPermissions()->saveUserPermissions($users['robin']->id, $reader);
+
+check('editors can save the test entry and the reader cannot', function() use ($entry, $users) {
+    $elements = Craft::$app->getElements();
+
+    return ($elements->canSave($entry, $users['alex']) && $elements->canView($entry, $users['robin']) && !$elements->canSave($entry, $users['robin']))
+        ?: 'the fixture permissions did not take';
+});
+
 $TAB_A = str_repeat('a', 32);
 $TAB_B = str_repeat('b', 32);
 $TAB_C = str_repeat('c', 32);
@@ -466,6 +484,30 @@ check('an advisory lock blocks nobody', function() use ($entry, $users, $section
 
     return !Plugin::getInstance()->locks->blocksSave($entry, $users['dana'])
         ?: 'an advisory lock refused a save';
+});
+
+check('a reader cannot take a lock over', function() use ($entry, $users, $section, $TAB_A, $TAB_B) {
+    configure(['lockMode' => Settings::LOCK_MODE_SECTIONS, 'lockedSections' => [$section->handle]]);
+    wipe();
+    $locks = Plugin::getInstance()->locks;
+    $locks->claimOrRenew($entry, $users['alex'], $TAB_A);
+
+    return (!$locks->canTakeOver($entry, $users['robin']) && !$locks->takeOver($entry, $users['robin'], $TAB_B))
+        ?: 'somebody who can only view the entry took the lock from an editor';
+});
+
+check('a reader is not somebody who can edit', function() use ($entry, $users) {
+    return !Plugin::getInstance()->locks->canEdit($entry, $users['robin'])
+        ?: 'canEdit said yes to a view-only account, so a reader would claim the lock';
+});
+
+check('canEdit is not answered by Stop Sign’s own lock', function() use ($entry, $users) {
+    // alex holds the lock, so dana is blocked from saving — but dana could save if it were not
+    // for the lock, which is the question take-over needs answered.
+    $locks = Plugin::getInstance()->locks;
+
+    return ($locks->blocksSave($entry, $users['dana']) && $locks->canEdit($entry, $users['dana']) && $locks->canTakeOver($entry, $users['dana']))
+        ?: 'the lock made its own holder’s colleague look like a reader';
 });
 
 check('releaseAll is a real kill switch', function() {
@@ -805,6 +847,19 @@ check('a collision is recorded', function() use ($entry, $users) {
         && $rows[0]['otherUserName'] === $users['dana']->getName()
         && $rows[0]['outcome'] === CollisionRecord::OUTCOME_PROCEEDED)
         ?: 'the collision was not recorded readably';
+});
+
+check('a repeated warning is one row, not one per heartbeat', function() use ($entry, $users) {
+    $collisions = Plugin::getInstance()->collisions;
+
+    foreach (range(1, 3) as $beat) {
+        $collisions->record($entry, $users['alex'], $users['dana']->id, CollisionRecord::KIND_CONCURRENT, CollisionRecord::OUTCOME_WARNED);
+    }
+
+    $warned = (int)(new craft\db\Query())->from(CollisionRecord::TABLE)->where(['outcome' => CollisionRecord::OUTCOME_WARNED])->count();
+    Db::delete(CollisionRecord::TABLE, ['outcome' => CollisionRecord::OUTCOME_WARNED]);
+
+    return $warned === 1 ?: "a client asking for a warned row on every beat wrote $warned";
 });
 
 check('history can be switched off', function() use ($entry, $users) {

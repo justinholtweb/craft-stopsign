@@ -242,10 +242,17 @@ class Plugin extends BasePlugin
 
             $request = Craft::$app->getRequest();
 
-            // Console commands, queue jobs and front-end requests are not people at keyboards.
-            // A lock that stops `resave/entries` or a Commerce order update is not a collision
-            // warning, it is an outage.
-            if ($request->getIsConsoleRequest() || !$request->getIsCpRequest()) {
+            // Console commands, queue jobs and visitors are not editors at keyboards, and a lock
+            // that stops `resave/entries` or a member's front-end form is not a collision warning,
+            // it is an outage. A control panel user posting to a front-end *action* URL is the
+            // exception: the same editor sending the same form to `/actions/elements/save`
+            // instead of `/admin/actions/…` would otherwise walk straight past a lock the settings
+            // promise is enforced.
+            if ($request->getIsConsoleRequest()) {
+                return;
+            }
+
+            if (!$request->getIsCpRequest() && !($request->getIsActionRequest() && $event->user?->can('accessCp'))) {
                 return;
             }
 
