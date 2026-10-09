@@ -3,12 +3,19 @@
 namespace justinholtweb\stopsign;
 
 use Craft;
+use craft\base\conditions\BaseCondition;
+use craft\base\Element;
+use craft\base\ElementInterface;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
+use craft\elements\conditions\ElementCondition;
 use craft\events\AuthorizationCheckEvent;
+use craft\events\DefineAttributeHtmlEvent;
 use craft\events\DefineElementHtmlEvent;
 use craft\events\ElementEvent;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterConditionRulesEvent;
+use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\TemplateEvent;
 use craft\helpers\Cp;
 use craft\helpers\Html;
@@ -18,6 +25,7 @@ use craft\services\Gc;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
+use justinholtweb\stopsign\conditions\IsLockedConditionRule;
 use justinholtweb\stopsign\console\controllers\StopSignController;
 use justinholtweb\stopsign\models\Settings;
 use justinholtweb\stopsign\services\Collisions;
@@ -47,6 +55,10 @@ class Plugin extends BasePlugin
 {
     public const LOG_CATEGORY = 'stopsign';
 
+    /** Element index columns. Prefixed so they cannot collide with a field or core attribute. */
+    public const ATTRIBUTE_OCCUPANTS = 'stopsign:occupants';
+    public const ATTRIBUTE_LOCK = 'stopsign:lock';
+
     public string $schemaVersion = '1.0.0';
     public bool $hasCpSettings = true;
 
@@ -74,6 +86,8 @@ class Plugin extends BasePlugin
         $this->registerSaveLedger();
         $this->registerLockEnforcement();
         $this->registerIndexBadges();
+        $this->registerIndexColumns();
+        $this->registerConditionRules();
         $this->registerCpAssets();
     }
 
@@ -101,7 +115,7 @@ class Plugin extends BasePlugin
         $options = [];
 
         foreach (Craft::$app->getElements()->getAllElementTypes() as $type) {
-            /** @var string|\craft\base\ElementInterface $type */
+            /** @var string|ElementInterface $type */
             $options[] = ['label' => $type::pluralDisplayName(), 'value' => $type];
         }
 
@@ -304,6 +318,103 @@ class Plugin extends BasePlugin
                 'class' => ['stopsign-occupied'],
                 'data' => ['stopsign-occupied' => '1'],
             ]);
+        });
+    }
+
+    /**
+     * “Being edited by” and “Locked by” columns for element indexes.
+     *
+     * The badge says *that* somebody is in an element; the column says who, and lets an editor
+     * sort a whole section by it at a glance. Both columns answer from one query per index page —
+     * `Presence::occupantsOf()` and `Locks::holderOf()` memoise every live row on first ask — so
+     * a hundred rows cost what one does.
+     *
+     * Registered per watched element type, because `EVENT_REGISTER_TABLE_ATTRIBUTES` is a static
+     * event with no sender: a handler on `Element` cannot tell which index is asking, so the only
+     * way to keep the column off unwatched types is not to attach it there.
+     */
+    private function registerIndexColumns(): void
+    {
+        $settings = $this->getSettings();
+
+        if (!$settings->enabled) {
+            return;
+        }
+
+        $types = $settings->watchAllElementTypes ? [Element::class] : $settings->watchedElementTypes;
+
+        foreach ($types as $type) {
+            Event::on($type, Element::EVENT_REGISTER_TABLE_ATTRIBUTES, function(RegisterElementTableAttributesEvent $event) {
+                $event->tableAttributes[self::ATTRIBUTE_OCCUPANTS] = ['label' => Craft::t('stopsign', 'Being edited by')];
+
+                if ($this->getSettings()->lockMode !== Settings::LOCK_MODE_OFF) {
+                    $event->tableAttributes[self::ATTRIBUTE_LOCK] = ['label' => Craft::t('stopsign', 'Locked by')];
+                }
+            });
+        }
+
+        Event::on(Element::class, Element::EVENT_DEFINE_ATTRIBUTE_HTML, function(DefineAttributeHtmlEvent $event) {
+            if ($event->attribute !== self::ATTRIBUTE_OCCUPANTS && $event->attribute !== self::ATTRIBUTE_LOCK) {
+                return;
+            }
+
+            /** @var ElementInterface $element */
+            $element = $event->sender;
+            $event->html = '';
+
+            try {
+                $event->html = $event->attribute === self::ATTRIBUTE_OCCUPANTS
+                    ? $this->occupantsColumnHtml($element)
+                    : $this->lockColumnHtml($element);
+            } catch (Throwable $e) {
+                // An empty cell, not a broken index.
+                Craft::error('Could not render a Stop Sign column: ' . $e->getMessage(), self::LOG_CATEGORY);
+            }
+        });
+    }
+
+    private function occupantsColumnHtml(ElementInterface $element): string
+    {
+        $canonicalId = $element->getCanonicalId();
+
+        if ($canonicalId === null || !$this->scope->watches($element)) {
+            return '';
+        }
+
+        $names = [];
+
+        foreach ($this->presence->occupantsOf($canonicalId) as $occupant) {
+            $names[] = $occupant['dirty']
+                ? Craft::t('stopsign', '{name} (typing)', ['name' => $occupant['name']])
+                : $occupant['name'];
+        }
+
+        return $names === [] ? '' : Html::encode(implode(', ', $names));
+    }
+
+    private function lockColumnHtml(ElementInterface $element): string
+    {
+        $canonicalId = $element->getCanonicalId();
+
+        if ($canonicalId === null || !$this->scope->locks($element)) {
+            return '';
+        }
+
+        $holder = $this->locks->holderOf($canonicalId, (int)$element->siteId);
+
+        return $holder === null ? '' : Html::encode($holder['name']);
+    }
+
+    /**
+     * The “Is locked” rule, on every element condition.
+     *
+     * Always, regardless of settings: see `IsLockedConditionRule` for why a rule that comes and
+     * goes with a setting is worse than one that matches nothing.
+     */
+    private function registerConditionRules(): void
+    {
+        Event::on(ElementCondition::class, BaseCondition::EVENT_REGISTER_CONDITION_RULES, function(RegisterConditionRulesEvent $event) {
+            $event->conditionRules[] = IsLockedConditionRule::class;
         });
     }
 

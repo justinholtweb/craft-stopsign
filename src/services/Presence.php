@@ -34,6 +34,9 @@ class Presence extends Component
     /** @var array<string, bool>|null Element ids with somebody in them, for the current request. */
     private ?array $activeIdMemo = null;
 
+    /** @var array<int, array<int, array{name: string, dirty: bool}>>|null The index column's answer, for the current request. */
+    private ?array $occupantMemo = null;
+
     /**
      * Records a heartbeat from one tab.
      *
@@ -76,7 +79,7 @@ class Presence extends Component
         // way no screen would ever show as wrong, because the number is always plausible.
         Db::upsert(PresenceRecord::TABLE, $key + $moving + ['firstSeen' => $now], $moving);
 
-        $this->activeIdMemo = null;
+        $this->forgetMemos();
     }
 
     /** Drops one tab’s row. Called on unload, and when a tab goes to the background. */
@@ -89,7 +92,7 @@ class Presence extends Component
             'sessionToken' => $sessionToken,
         ]);
 
-        $this->activeIdMemo = null;
+        $this->forgetMemos();
     }
 
     /**
@@ -184,6 +187,62 @@ class Presence extends Component
     }
 
     /**
+     * Who is in a given element, for the “Being edited by” index column.
+     *
+     * Same shape of answer as `isOccupied()` and for the same reason: one query (and one user
+     * query) for the whole request, never one per row. Across every site, like the chip badge it
+     * sits beside — a column that said “nobody” next to a badge that said “somebody” would teach
+     * people to trust neither.
+     *
+     * @return array<int, array{name: string, dirty: bool}> Keyed by user id; people with unsaved
+     *     changes first.
+     */
+    public function occupantsOf(int $canonicalId): array
+    {
+        if ($this->occupantMemo === null) {
+            $rows = (new Query())
+                ->select(['elementId', 'userId', 'dirty'])
+                ->from(PresenceRecord::TABLE)
+                ->where(['>', 'lastSeen', $this->horizon()])
+                ->orderBy(['lastSeen' => SORT_DESC])
+                ->all();
+
+            $users = $rows === [] ? [] : User::find()
+                ->id(array_unique(array_column($rows, 'userId')))
+                ->status(null)
+                ->indexBy('id')
+                ->all();
+
+            $memo = [];
+
+            foreach ($rows as $row) {
+                $userId = (int)$row['userId'];
+
+                if (!isset($users[$userId])) {
+                    continue;
+                }
+
+                // One entry per person however many tabs they have, and a tab with unsaved
+                // changes wins over one without.
+                $existing = $memo[(int)$row['elementId']][$userId] ?? null;
+                $memo[(int)$row['elementId']][$userId] = [
+                    'name' => $users[$userId]->getName(),
+                    'dirty' => ($existing['dirty'] ?? false) || (bool)$row['dirty'],
+                ];
+            }
+
+            foreach ($memo as &$occupants) {
+                uasort($occupants, fn(array $a, array $b) => $b['dirty'] <=> $a['dirty']);
+            }
+            unset($occupants);
+
+            $this->occupantMemo = $memo;
+        }
+
+        return $this->occupantMemo[$canonicalId] ?? [];
+    }
+
+    /**
      * Everything currently open, newest first, for the utility screen.
      *
      * @return array<int, array{userId: int, userName: string, elementId: int, siteId: int, elementType: string, intent: string, dirty: bool, firstSeen: DateTime, lastSeen: DateTime}>
@@ -225,7 +284,7 @@ class Presence extends Component
     /** Deletes rows nobody can be behind any more. Run from garbage collection and the console. */
     public function prune(): int
     {
-        $this->activeIdMemo = null;
+        $this->forgetMemos();
 
         // Ten times the presence window, not one: a row that is merely stale is harmless and
         // costs one indexed comparison, whereas deleting on the exact boundary throws away the
@@ -236,6 +295,12 @@ class Presence extends Component
         );
 
         return Db::delete(PresenceRecord::TABLE, ['<', 'lastSeen', $cutoff]);
+    }
+
+    private function forgetMemos(): void
+    {
+        $this->activeIdMemo = null;
+        $this->occupantMemo = null;
     }
 
     /** The moment before which a heartbeat no longer counts as somebody being here. */

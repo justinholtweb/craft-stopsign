@@ -10,4 +10,8 @@
 
 return [
     'Stop Sign' => 'Stop Sign',
+    'Being edited by' => 'Being edited by',
+    'Locked by' => 'Locked by',
+    'Is locked' => 'Is locked',
+    '{name} (typing)' => '{name} (typing)',
 ];

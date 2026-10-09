@@ -26,6 +26,7 @@ use craft\elements\User;
 use craft\helpers\Db;
 use craft\helpers\StringHelper;
 use craft\services\Elements;
+use justinholtweb\stopsign\conditions\IsLockedConditionRule;
 use justinholtweb\stopsign\models\Settings;
 use justinholtweb\stopsign\models\Verdict;
 use justinholtweb\stopsign\Plugin;
@@ -687,6 +688,196 @@ check('an excluded section is never badged', function() use ($entry, $section) {
 
     return !str_contains(craft\helpers\Cp::elementChipHtml($entry, ['context' => 'index']), 'stopsign-occupied')
         ?: 'an excluded section was badged';
+});
+
+// ---------------------------------------------------------------------------- index columns + rule
+
+section('Index columns and the “Is locked” rule');
+
+/** Runs a query through an element condition holding only the “Is locked” rule. */
+function lockedIds(bool $value, array $ids, ?callable $tweak = null): array
+{
+    $condition = Entry::createCondition();
+    $rule = new IsLockedConditionRule();
+    $rule->value = $value;
+    $condition->addConditionRule($rule);
+
+    // Through the config round trip a saved custom source takes, not only the live object.
+    $condition = Craft::$app->getConditions()->createCondition($condition->getConfig());
+
+    $query = Entry::find()->id($ids)->status(null);
+
+    if ($tweak) {
+        $tweak($query);
+    }
+
+    $condition->modifyQuery($query);
+
+    $found = array_map('intval', $query->ids());
+    sort($found);
+
+    return $found;
+}
+
+check('entry indexes offer a “Being edited by” column', function() {
+    configure();
+
+    return isset(Entry::tableAttributes()[Plugin::ATTRIBUTE_OCCUPANTS]) ?: 'the column was not registered';
+});
+
+check('the “Locked by” column only appears once locking is on', function() {
+    configure();
+    $off = !isset(Entry::tableAttributes()[Plugin::ATTRIBUTE_LOCK]);
+    configure(['lockMode' => Settings::LOCK_MODE_ALL]);
+    $on = isset(Entry::tableAttributes()[Plugin::ATTRIBUTE_LOCK]);
+
+    return ($off && $on) ?: 'the lock column ignored the lock mode';
+});
+
+check('the occupants column names who is in, typing first, and only on that row', function() use ($entry, $otherEntry, $users, $TAB_A, $TAB_C) {
+    wipe();
+    configure();
+    $presence = Plugin::getInstance()->presence;
+    $presence->beat($entry, $users['alex'], $TAB_A, 'viewing', false);
+    $presence->beat($entry, $users['dana'], $TAB_C, 'editing', true);
+
+    $html = $entry->getAttributeHtml(Plugin::ATTRIBUTE_OCCUPANTS);
+    $empty = $otherEntry->getAttributeHtml(Plugin::ATTRIBUTE_OCCUPANTS);
+    $expected = $users['dana']->getName() . ' (typing), ' . $users['alex']->getName();
+
+    return ($html === $expected && $empty === '') ?: "got “{$html}” and “{$empty}”";
+});
+
+check('two tabs of one person are one name', function() use ($entry, $users, $TAB_B) {
+    Plugin::getInstance()->presence->beat($entry, $users['alex'], $TAB_B, 'viewing', false);
+
+    return substr_count($entry->getAttributeHtml(Plugin::ATTRIBUTE_OCCUPANTS), $users['alex']->getName()) === 1
+        ?: 'a second tab was listed as a second person';
+});
+
+check('the occupants column is one query for the whole index, not one per row', function() use ($entry, $otherEntry) {
+    $presence = Plugin::getInstance()->presence;
+    $presence->occupantsOf($entry->id);
+
+    // Write a row behind the memo's back: a per-row query would see it, a memoised one must not.
+    Db::insert(PresenceRecord::TABLE, [
+        'elementId' => $otherEntry->id,
+        'siteId' => $otherEntry->siteId,
+        'userId' => $entry->authorId,
+        'sessionToken' => str_repeat('d', 32),
+        'elementType' => Entry::class,
+        'intent' => 'viewing',
+        'dirty' => false,
+        'firstSeen' => Db::prepareDateForDb(new DateTime()),
+        'lastSeen' => Db::prepareDateForDb(new DateTime()),
+    ]);
+    $memoised = $presence->occupantsOf($otherEntry->id) === [];
+    Db::delete(PresenceRecord::TABLE, ['sessionToken' => str_repeat('d', 32)]);
+
+    return $memoised ?: 'the column queried again for a second row';
+});
+
+check('names are escaped in the occupants column', function() use ($entry, $users, $TAB_C) {
+    $dana = $users['dana'];
+    $realName = $dana->fullName;
+    $dana->fullName = '<b>Dana</b> Tester';
+    Craft::$app->getElements()->saveElement($dana, false);
+    Plugin::getInstance()->presence->beat($entry, $dana, $TAB_C, 'editing', true);
+
+    $html = $entry->getAttributeHtml(Plugin::ATTRIBUTE_OCCUPANTS);
+
+    $dana->fullName = $realName;
+    Craft::$app->getElements()->saveElement($dana, false);
+
+    return (!str_contains($html, '<b>') && str_contains($html, '&lt;b&gt;')) ?: "unescaped: $html";
+});
+
+check('an excluded section gets an empty occupants cell', function() use ($entry, $section) {
+    configure(['excludedSections' => [$section->handle]]);
+
+    return $entry->getAttributeHtml(Plugin::ATTRIBUTE_OCCUPANTS) === '' ?: 'an unwatched entry named its occupants';
+});
+
+check('the lock column names the holder on the locked row only', function() use ($entry, $otherEntry, $users, $TAB_A) {
+    wipe();
+    configure(['lockMode' => Settings::LOCK_MODE_ALL]);
+    Plugin::getInstance()->locks->claimOrRenew($entry, $users['alex'], $TAB_A);
+
+    $html = $entry->getAttributeHtml(Plugin::ATTRIBUTE_LOCK);
+    $empty = $otherEntry->getAttributeHtml(Plugin::ATTRIBUTE_LOCK);
+
+    return ($html === $users['alex']->getName() && $empty === '') ?: "got “{$html}” and “{$empty}”";
+});
+
+check('the lock column empties when the lock changes hands or goes', function() use ($entry, $users, $TAB_A, $TAB_C) {
+    $locks = Plugin::getInstance()->locks;
+    $locks->takeOver($entry, $users['dana'], $TAB_C);
+    $afterTakeOver = $entry->getAttributeHtml(Plugin::ATTRIBUTE_LOCK);
+    $locks->release($entry, $users['dana'], $TAB_C);
+    $afterRelease = $entry->getAttributeHtml(Plugin::ATTRIBUTE_LOCK);
+
+    return ($afterTakeOver === $users['dana']->getName() && $afterRelease === '')
+        ?: "got “{$afterTakeOver}” then “{$afterRelease}”";
+});
+
+check('every entry condition offers “Is locked”', function() {
+    foreach (Entry::createCondition()->getSelectableConditionRules() as $rule) {
+        if ($rule instanceof IsLockedConditionRule) {
+            return true;
+        }
+    }
+
+    return 'the rule was not selectable';
+});
+
+check('“Is locked” is still offered with locking off, so a saved source never widens to everything', function() {
+    configure();
+
+    foreach (Entry::createCondition()->getSelectableConditionRules() as $rule) {
+        if ($rule instanceof IsLockedConditionRule) {
+            return true;
+        }
+    }
+
+    return 'the rule vanished with the setting';
+});
+
+check('“Is locked” narrows a query to the locked entry, and “not” to the rest', function() use ($entry, $otherEntry, $users, $TAB_A) {
+    wipe();
+    configure(['lockMode' => Settings::LOCK_MODE_ALL]);
+    Plugin::getInstance()->locks->claimOrRenew($entry, $users['alex'], $TAB_A);
+    $ids = [$entry->id, $otherEntry->id];
+
+    $locked = lockedIds(true, $ids);
+    $unlocked = lockedIds(false, $ids);
+
+    return ($locked === [$entry->id] && $unlocked === [$otherEntry->id])
+        ?: 'locked ' . json_encode($locked) . ', unlocked ' . json_encode($unlocked);
+});
+
+check('“Is locked” agrees with itself on a single element', function() use ($entry, $otherEntry) {
+    $rule = new IsLockedConditionRule();
+    $rule->value = true;
+
+    return ($rule->matchElement($entry) && !$rule->matchElement($otherEntry)) ?: 'matchElement disagreed with the query';
+});
+
+check('“Is locked” finds the drafts of a locked entry', function() use ($entry, $admin) {
+    $draft = Craft::$app->getDrafts()->createDraft($entry, $admin->id);
+
+    try {
+        $found = lockedIds(true, [$draft->id], fn($query) => $query->drafts(true));
+    } finally {
+        Craft::$app->getElements()->deleteElement($draft, true);
+    }
+
+    return $found === [$draft->id] ?: 'a draft of a locked entry was not matched: ' . json_encode($found);
+});
+
+check('an expired lock is not a lock', function() use ($entry, $otherEntry) {
+    Db::update(LockRecord::TABLE, ['expiryDate' => Db::prepareDateForDb(new DateTime('-1 minute'))], ['elementId' => $entry->id]);
+
+    return lockedIds(true, [$entry->id, $otherEntry->id]) === [] ?: 'an expired lock still matched';
 });
 
 // ---------------------------------------------------------------------------- staleness

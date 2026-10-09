@@ -141,6 +141,17 @@ a forged token can only confuse its forger.
   every save, so a fixture entry owned by a freshly created (and therefore inactive) test user
   saves once and never again — which presents exactly as “the save ledger records nothing”.
 
+- **`Element::EVENT_REGISTER_TABLE_ATTRIBUTES` is a static event with no sender.** It is
+  triggered on `static::class` with a string, so a handler on `Element` cannot tell which index
+  is asking. The index columns are attached per watched element type instead (or on `Element`
+  when every type is watched).
+- **Craft silently drops an unselectable rule from a saved condition** (`setConditionRules()` →
+  `validateConditionRule()`), it does not refuse it. A rule registered only while locking is on
+  would turn a saved “currently locked” source into “everything” the day locking went off — so
+  `IsLockedConditionRule` is registered on every element condition, always.
+- **In Craft 5 a user's name is `fullName`.** Setting `firstName` on a saved user and re-saving
+  leaves `getName()` unchanged.
+
 See also `[[craft-plugin-gotchas]]` in the shared memory for family-wide traps.
 
 ## The icon
@@ -165,7 +176,7 @@ rather than `ddev exec` — see `[[plugin-testing-harness]]` for why.
 
 ```sh
 docker exec -w /var/www/html ddev-plugin-testing-web \
-    php /var/www/craft-stopsign/tests/integration/checks.php          # 85 checks
+    php /var/www/craft-stopsign/tests/integration/checks.php          # 100 checks
 docker exec ddev-plugin-testing-web bash -c \
     'find /var/www/craft-stopsign/src -name "*.php" -print0 | xargs -0 -n1 php -l'
 node --check src/web/assets/cp/dist/stopsign-cp.js

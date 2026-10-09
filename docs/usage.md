@@ -43,6 +43,31 @@ fields. It is a snapshot from when the page rendered, not a live feed — the al
 from every index screen in the control panel, which is a lot of requests to answer a question that
 is only ever "probably not".
 
+## Index columns
+
+Two columns can be added to any watched element type's index through **Customize → Table
+columns**:
+
+- **Being edited by** — everybody who currently has the element open, in any site. Somebody with
+  unsaved changes is listed first and marked “(typing)”. Two tabs of one person are one name.
+- **Locked by** — who holds the lock on the element in the site you are viewing. Only offered
+  while locking is switched on; empty for elements that are not lockable.
+
+Like the badge, both are a snapshot from when the page rendered, and both are answered for the
+whole page in one query each, not one per row.
+
+## A “currently locked” source
+
+Every element condition gains an **Is locked** rule. Add a custom source to an index (**Customize →
+New custom source**), give it the rule switched on, and it lists exactly the elements that are
+locked right now in the site being viewed — drafts of a locked entry included. Switched off, it
+lists everything that is not locked.
+
+The rule is offered whatever the lock mode, on purpose: Craft silently drops a rule it no longer
+offers from a saved condition, so a source built on a rule that disappeared with locking would turn
+into “everything”. With locking off nothing is locked, and the source is simply empty. Expired
+locks never match.
+
 ## Utilities → Stop Sign
 
 Three things:

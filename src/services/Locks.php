@@ -35,6 +35,9 @@ class Locks extends Component
     /** @var array<string, array|null> Live lock rows by `elementId:siteId`, or null for none. */
     private array $memo = [];
 
+    /** @var array<string, array{userId: int, name: string}>|null Every live lock, for index columns. */
+    private ?array $holderMemo = null;
+
     /** Set while `canEdit()` asks Craft, so this plugin's own lock does not answer for it. */
     private bool $ignoringLocks = false;
 
@@ -289,6 +292,7 @@ class Locks extends Component
     public function releaseAll(): int
     {
         $this->memo = [];
+        $this->holderMemo = null;
 
         return Db::delete(LockRecord::TABLE, []);
     }
@@ -297,8 +301,33 @@ class Locks extends Component
     public function prune(): int
     {
         $this->memo = [];
+        $this->holderMemo = null;
 
         return Db::delete(LockRecord::TABLE, ['<', 'expiryDate', Db::prepareDateForDb(new DateTime('now', new DateTimeZone('UTC')))]);
+    }
+
+    /**
+     * Who holds the lock on an element in a site, for the “Locked by” index column.
+     *
+     * Every live lock in one query for the whole request. `row()` would be one query per row of
+     * the index, and an index is exactly the screen where somebody scans a hundred of them.
+     *
+     * @return array{userId: int, name: string}|null
+     */
+    public function holderOf(int $canonicalId, int $siteId): ?array
+    {
+        if ($this->holderMemo === null) {
+            $this->holderMemo = [];
+
+            foreach ($this->all() as $lock) {
+                $this->holderMemo[$lock['elementId'] . ':' . $lock['siteId']] = [
+                    'userId' => $lock['userId'],
+                    'name' => $lock['userName'],
+                ];
+            }
+        }
+
+        return $this->holderMemo["$canonicalId:$siteId"] ?? null;
     }
 
     /** @return array<int, array{elementId: int, siteId: int, userId: int, userName: string, expiryDate: DateTime}> */
@@ -368,6 +397,7 @@ class Locks extends Component
     private function forget(int $elementId, int $siteId): void
     {
         unset($this->memo["$elementId:$siteId"]);
+        $this->holderMemo = null;
     }
 
     private function ttl(): int

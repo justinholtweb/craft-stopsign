@@ -26,7 +26,8 @@ It is deliberately understated, and it stops well short of a collision warning:
 | The entry changed under you | A "Reload" prompt — **full-page editors only** | The same warning in slideouts too, and it names who saved |
 | Who saved it | Not recorded anywhere | Named |
 | Your own account in another tab | Never reported — your user id is filtered out of the results | Reported |
-| Before you open the entry | Nothing | A badge on the index chip |
+| Before you open the entry | Nothing | A badge on the index chip, plus “Being edited by” and “Locked by” columns |
+| Finding what is locked | Nothing | An “Is locked” condition rule for custom index sources |
 | Afterwards | Nothing. The table is emptied every 60 seconds | A history, with what each author decided |
 | Configurable | No | Yes |
 | Locking | No | Optional, per section, always takeable |

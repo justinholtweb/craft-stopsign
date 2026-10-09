@@ -1,5 +1,15 @@
 # Release Notes for Stop Sign
 
+## Unreleased
+
+### Added
+
+- “Being edited by” and “Locked by” element index columns, so you can see who is in what — and
+  who holds which lock — across a whole section at once. One query per page each, not one per row.
+- An “Is locked” condition rule on every element condition, for building a “currently locked”
+  custom source on any element index. It matches the lock in the site being viewed, includes the
+  drafts of locked entries, and never matches an expired lock.
+
 ## 5.0.0 - 2026-10-03
 
 Initial release.
