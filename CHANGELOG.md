@@ -1,7 +1,6 @@
 # Release Notes for Stop Sign
 
-## Unreleased
-
+## 5.1.0 - 2026-10-09
 ### Added
 
 - “Being edited by” and “Locked by” element index columns, so you can see who is in what — and

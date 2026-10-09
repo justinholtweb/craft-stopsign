@@ -1,7 +1,7 @@
 {
     "name": "justinholtweb/craft-stopsign",
     "description": "Concurrent-editing collision warnings for Craft CMS — an unmissable banner when someone else is in the same entry, a confirmation before you save over them, and an optional soft lock you can always take over.",
-    "version": "5.0.0",
+    "version": "5.1.0",
     "type": "craft-plugin",
     "keywords": [
         "craftcms",
